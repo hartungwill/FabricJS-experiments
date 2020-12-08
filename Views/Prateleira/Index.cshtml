@@ -1,0 +1,712 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <style>
+        #c {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="btn btn-success" id="carregaImagem" onclick="inicializar();">
+        Carregar Imagem
+    </button>
+    <br />
+    <br />
+    <br />
+
+    @*<canvas id="c" width="800" height="800"></canvas>*@
+    <canvas id="c" width="1000" height="625"></canvas>
+
+    <br />
+    <button class="btn btn-success" id="rasterizar3" onclick="rasterizePrint()">
+        Rasterizar para impressão
+    </button>
+
+    <br />
+    <br />
+    <button class="btn btn-success" id="rasterizar3" onclick="validar()">
+        validar
+    </button>
+    <br />
+    <br />
+    <div id="imager"></div>
+</body>
+</html>
+
+<script src="~/Content/JS/lodash.min.js"></script>
+<script src="~/Content/JS/fabric.min.js"></script>
+<script src="~/Content/JS/jquery-3.5.1.min.js"></script>
+<script>
+
+    // Objetos simulando backend
+    const AreaCanvas = (function () {
+
+        const Propriedades = {
+            ID: 'c',
+            width: 1000,
+            height: 625,
+            scale: 1
+        };
+
+        return {
+            Propriedades
+        };
+    })();
+
+    const Clip = (function () {
+
+        const Dimensoes = [
+            {
+                nomeClip: 'logo',
+                //originX: 'left',
+                //originY: 'top',
+                top: 988,
+                left: 136,
+                width: 1000,
+                height: 900
+            }, {
+                nomeClip: 'pug',
+                //originX: 'left',
+                //originY: 'top',
+                top: 988,
+                left: 1336,
+                width: 1000,
+                height: 900
+            }];
+
+        return {
+            Dimensoes
+        };
+    })();
+
+    const Shelf = (function () {
+
+        const Dimensoes = [
+            {
+                tipo: 'shelf',
+                nome: 'prat_cima',
+                top: 20,
+                left: 20,
+                width: 540,
+                height: 190,
+                cor: 'transparent',
+                borda: '#ccc',
+                selecionavel: false,
+            }, {
+                tipo: 'shelf',
+                nome: 'prat_baixo',
+                //originX: 'left',
+                //originY: 'top',
+                top: 220,
+                left: 20,
+                width: 540,
+                height: 190,
+                cor: 'transparent',
+                borda: '#ccc',
+                selecionavel: false,
+            }
+        ];
+
+        return {
+            Dimensoes
+        };
+    })();
+
+    const Objetos = (function () {
+
+        const Dimensoes = [{
+            tipo: 'fundo',
+            url: '/Content/Images/prateleira.jpg',
+            //angle: 0,
+            //width: 2480,
+            //height: 3284,
+            left: 0,
+            top: 0,
+            clipName: null,
+            selecionavel: false,
+            preservarEmpilhamento: true,
+            ordem: 1
+        }, {
+            nome: 'papel',
+            prateleira: 'prat_baixo',
+            tipo: 'imagem',
+            url: '/Content/Images/prat_1.jpg',
+            //angle: 0,
+            //width: 500,
+            //height: 988,
+            left: 590,
+            top: 10,
+            selecionavel: true,
+            preservarEmpilhamento: true,
+            correto: false,
+            ordem: 2
+        }, {
+            nome: 'borrifador',
+            prateleira: 'prat_cima',
+            tipo: 'imagem',
+            url: '/Content/Images/prat_2.jpg',
+            //angle: 0, //45
+            //width: 500,
+            //height: 988,
+            left: 590,
+            top: 150,
+            selecionavel: true,
+            preservarEmpilhamento: true,
+            correto: false,
+            ordem: 3
+        }, {
+            nome: 'azul',
+            prateleira: 'prat_cima',
+            tipo: 'imagem',
+            url: '/Content/Images/prat_3.jpg',
+            //angle: 0, //45
+            //width: 500,
+            //height: 988,
+            left: 790,
+            top: 250,
+            selecionavel: true,
+            preservarEmpilhamento: true,
+            correto: false,
+            ordem: 3
+        }, {
+            nome: 'roxo',
+            prateleira: 'prat_cima',
+            tipo: 'imagem',
+            url: '/Content/Images/prat_4.jpg',
+            //angle: 0, //45
+            //width: 500,
+            //height: 988,
+            left: 590,
+            top: 350,
+            selecionavel: true,
+            preservarEmpilhamento: true,
+            correto: false,
+            ordem: 3
+        }, {
+            nome: 'arroz',
+            prateleira: 'prat_baixo',
+            tipo: 'imagem',
+            url: '/Content/Images/prat_5.jpg',
+            //angle: 0, //45
+            //width: 500,
+            //height: 988,
+            left: 590,
+            top: 450,
+            selecionavel: true,
+            preservarEmpilhamento: true,
+            correto: false,
+            ordem: 3
+        }
+            //}, {
+            //    tipo: 'texto',
+            //    texto: 'PROMOÇÃO COMPRE E GANHE COM A Fabric',
+            //    left: 500,
+            //    top: 350,
+            //    width: 1500,
+            //    fontSize: 145,
+            //    fill: '#FFF',
+            //    strokeWidth: 5,
+            //    stroke: "#880E4F",
+            //    selecionavel: true,
+            //    ordem: 4
+            //}, {
+            //    tipo: 'texto',
+            //    texto: 'NA COMPRA DE 3 LITROS DE LUBRIFICANTE Fabric SUPER MOTO',
+            //    left: 245,
+            //    top: 2000,
+            //    width: 900,
+            //    fontSize: 80,
+            //    fill: '#FFF',
+            //    strokeWidth: 5,
+            //    //stroke: "#880E4F",
+            //    selecionavel: true,
+            //    ordem: 5
+            //    }
+        ];
+
+        return {
+            Dimensoes
+        };
+    })();
+
+    // Functions dos Botões
+    const canvas = new fabric.Canvas(AreaCanvas.Propriedades.ID);
+    var grid = 40;
+
+    function inicializar() {
+        //limpar canvas
+        canvas.clear();
+
+        //loop dos CLIPs (máscaras)
+        //for (let clip = 0; clip < Clip.Dimensoes.length; clip++) {
+        //    const clipAtual = Clip.Dimensoes[clip];
+        //    carregarClip(canvas, clipAtual);
+        //}
+
+        //loop dos elementos do canvas
+        for (let i = 0; i < Shelf.Dimensoes.length; i++) {
+
+            const objetoAtual = Shelf.Dimensoes[i];
+
+            if (objetoAtual.tipo === 'shelf') {
+                carregarShelf(canvas, objetoAtual);
+            }
+        }
+
+        //loop dos elementos do canvas
+        for (let objeto = 0; objeto < Objetos.Dimensoes.length; objeto++) {
+
+            const objetoAtual = Objetos.Dimensoes[objeto];
+
+            if (objetoAtual.tipo === 'fundo') {
+                carregarFundo(canvas, objetoAtual);
+            } else if (objetoAtual.tipo === 'imagemClip') {
+                carregarImagemComClip(canvas, objetoAtual);
+            } else if (objetoAtual.tipo === 'imagem') {
+                carregarImagem(canvas, objetoAtual);
+            } else if (objetoAtual.tipo === 'texto') {
+                carregaTexto(canvas, objetoAtual);
+            }
+        }
+
+        //Ajusta proporção canvas
+        zoomWork(AreaCanvas.Propriedades.scale);
+
+        //GRID
+        //createGrid(canvas);
+        //snapToGrid(canvas);
+
+        //opacityOnMove(canvas);
+
+        intersection(canvas);
+    }
+
+    //Functions dos tipos de objetos no canvas
+    function carregarClip(canvas, objetoClip) {
+        // gera o CLIP (máscara de recorte)
+        let clipPoly = new fabric.Rect({
+            originX: 'left',
+            originY: 'top',
+            left: objetoClip.left,
+            top: objetoClip.top,
+            width: objetoClip.width,
+            height: objetoClip.height,
+            fill: 'transparent', /* use transparent for no fill */
+            strokeWidth: 0,
+            selectable: false
+        });
+
+        // O objeto criado precisa desta propriedade como ID para que as functions `clipTo`
+        // das imagems o encontrem para referência
+        clipPoly.set({
+            clipFor: objetoClip.nomeClip
+        });
+
+        canvas.add(clipPoly);
+    }
+
+    function carregarFundo(canvas, objetoFundo) {
+
+        //FUNDO
+        let fundoImg = new Image();
+        fundoImg.onload = function (img) {
+            let imagemFabric = new fabric.Image(fundoImg, {
+                //width: Imagem.Dimensoes[0].width,
+                //height: Imagem.Dimensoes[0].height,
+                //scaleX: Imagem.Dimensoes[0].scaleX,
+                //scaleY: Imagem.Dimensoes[0].scaleY,
+                left: objetoFundo.left,
+                top: objetoFundo.top,
+                selectable: objetoFundo.selecionavel,
+                preserveObjectStacking: objetoFundo.preservarEmpilhamento,
+                tipo: objetoFundo.tipo
+            });
+            canvas.add(imagemFabric);
+            canvas.sendToBack(imagemFabric);
+            //canvas.moveTo(fundo, objetoFundo.ordem);
+        };
+        fundoImg.src = objetoFundo.url;
+    }
+
+    function carregarImagem(canvas, objetoImagem) {
+
+        //Add imagem
+        let imagemGerada = new Image();
+        imagemGerada.onload = function (img) {
+            const imagemFabric = new fabric.Image(imagemGerada, {
+                left: objetoImagem.left,
+                top: objetoImagem.top,
+                hasControls: false,
+                nome: objetoImagem.nome,
+                prateleira: objetoImagem.prateleira,
+                correto: objetoImagem.correto,
+                tipo: objetoImagem.tipo
+            });
+            canvas.add(imagemFabric);
+        };
+        imagemGerada.src = objetoImagem.url;
+    }
+
+    function carregarImagemComClip(canvas, objetoImagem) {
+
+        //PUG ESQUERDA
+        let imagemGerada = new Image();
+        imagemGerada.onload = function (img) {
+            let imagemFabric = new fabric.Image(imagemGerada, {
+                left: objetoImagem.left,
+                top: objetoImagem.top,
+                clipName: objetoImagem.clipName,
+                clipTo: function (ctx) {
+                    return _.bind(clipByName, imagemFabric)(ctx)
+                }
+            });
+            canvas.add(imagemFabric);
+        };
+        imagemGerada.src = objetoImagem.url;
+
+    }
+
+    function carregaTexto(canvas, Texto) {
+
+        let textoFabric = new fabric.Textbox(Texto.texto, {
+            left: Texto.left,
+            top: Texto.top,
+            width: Texto.width,
+            fontSize: Texto.fontSize,
+            fill: Texto.fill,
+            strokeWidth: Texto.strokeWidth,
+            stroke: Texto.stroke
+        });
+        canvas.add(textoFabric);
+    }
+
+    function carregarShelf(canvas, prateleira) {
+        let rect = new fabric.Rect({
+            top: prateleira.top,
+            left: prateleira.left,
+            width: prateleira.width,
+            height: prateleira.height,
+            fill: prateleira.cor,
+            stroke: prateleira.borda,
+            selectable: prateleira.selecionavel,
+            nome: prateleira.nome,
+            tipo: prateleira.tipo
+        });
+
+        canvas.add(rect);
+    }
+
+    //Zoom
+    function zoomWork(scale) {
+        const proporcao = 1 / scale;
+        setCanvas(proporcao);
+    }
+
+    function deZoom(scale) {
+        let zoom = scale * (canvas.viewportTransform[0] || 1);
+        setCanvas(zoom);
+    }
+
+    function setCanvas(proporcao) {
+        canvas.setHeight(AreaCanvas.Propriedades.height * proporcao);
+        canvas.setWidth(AreaCanvas.Propriedades.width * proporcao);
+        canvas.setZoom(proporcao);
+        canvas.renderAll();
+        canvas.calcOffset();
+    }
+
+    // Impressão
+    function rasterizePrint() {
+        //remove a selação nos objetos, se houver
+        canvas.deactivateAll().renderAll();
+
+        //retira o zoom para renderizar a imagem full
+        deZoom(AreaCanvas.Propriedades.scale);
+
+        //Converte o canvas em JPEG e, em sequência, para blob
+        let dataURL = canvas.toDataURL({ format: 'jpeg' });
+        const blob = dataURLtoBlob(dataURL);
+        const objurl = URL.createObjectURL(blob);
+
+        // Cria um link e faz o download do blob, clicando
+        let link = document.createElement("a");
+        link.download = "helloWorld.jpg";
+        link.href = objurl;
+        link.click();
+
+        //volta o canvas para a posição de edição
+        zoomWork(AreaCanvas.Propriedades.scale);
+    }
+
+    function dataURLtoBlob(dataurl) {
+        var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], { type: mime });
+    }
+
+    //FabricJS Helpers
+    function findByClipName(name) {
+        return _(canvas.getObjects()).where({
+            clipFor: name
+        }).first()
+    }
+
+    var clipByName = function (ctx) {
+        this.setCoords();
+        var clipRect = findByClipName(this.clipName);
+        var scaleXTo1 = (1 / this.scaleX);
+        var scaleYTo1 = (1 / this.scaleY);
+        ctx.save();
+
+        var ctxLeft = -(this.width / 2) + clipRect.strokeWidth;
+        var ctxTop = -(this.height / 2) + clipRect.strokeWidth;
+        //var ctxWidth = clipRect.width - clipRect.strokeWidth;
+        //var ctxHeight = clipRect.height - clipRect.strokeWidth;
+
+        ctx.translate(ctxLeft, ctxTop);
+        ctx.rotate(this.angle * -1 * Math.PI / 180);
+        ctx.scale(scaleXTo1, scaleYTo1);
+
+        var x = this.canvas.viewportTransform;
+
+        ctx.scale(1 / x[0], 1 / x[3]);
+        ctx.translate(x[4], x[5]);
+
+        //var scaleX = this.canvas.viewportTransform[0];
+        //var scaleY = this.canvas.viewportTransform[3];
+
+        ctx.beginPath();
+
+        ctx.rect(
+            x[0] * clipRect.left - this.oCoords.tl.x,
+            x[3] * clipRect.top - this.oCoords.tl.y,
+            x[0] * clipRect.width,
+            x[3] * clipRect.height);
+        ctx.closePath();
+        ctx.restore();
+    }
+
+    function createGrid(canvas) {
+        // create grid
+        for (var i = 0; i < (600 / grid); i++) {
+            canvas.add(new fabric.Line([i * grid, 0, i * grid, 600], { stroke: '#ccc', selectable: false, opacity: 0.3 }));
+            canvas.add(new fabric.Line([0, i * grid, 600, i * grid], { stroke: '#ccc', selectable: false, opacity: 0.3 }))
+        }
+    }
+
+    function snapToGrid(canvas) {
+        canvas.on('object:moving', function (options) {
+            options.target.set({
+                left: Math.round(options.target.left / grid) * grid,
+                top: Math.round(options.target.top / grid) * grid
+            });
+        });
+    }
+
+    function opacityOnMove(canvas) {
+        canvas.on('mouse:move', function (options) {
+
+            let p = canvas.getPointer(options.e);
+
+            canvas.forEachObject(function (obj) {
+                var distX = Math.abs(p.x - obj.left),
+                    distY = Math.abs(p.y - obj.top),
+                    dist = Math.round(Math.sqrt(Math.pow(distX, 2) + Math.pow(distY, 2)));
+
+                obj.set('opacity', 1 / (dist / 20));
+            });
+
+            canvas.renderAll();
+        });
+    }
+
+    function intersection(canvas) {
+        canvas.on({
+            'object:moving': onChange,
+            'object:modified': drop
+        });
+
+        function onChange(options) {
+            options.target.setCoords();
+
+            canvas.forEachObject(function (targ) {
+                activeObject = canvas.getActiveObject();
+
+                if (targ === activeObject) return;
+
+                if (targ.tipo !== 'fundo') {
+
+                    let objetoAtual = options.target;
+
+                    if ((activeObject.intersectsWithObject(targ) && targ.intersectsWithObject(activeObject)) && objetoAtual.prateleira === targ.nome) {
+                        targ.strokeWidth = 10;
+                        targ.stroke = 'green';
+                    } else if (objetoAtual.isContainedWithinObject(targ) && objetoAtual.prateleira === targ.nome) {
+                        targ.strokeWidth = 10;
+                        targ.stroke = 'green';
+                    } else if (objetoAtual.isContainedWithinObject(targ) && objetoAtual.prateleira !== targ.nome) {
+                        targ.strokeWidth = 10;
+                        targ.stroke = 'red';
+                    } else if (activeObject.intersectsWithObject(targ) && targ.intersectsWithObject(activeObject)) {
+                        targ.strokeWidth = 10;
+                        targ.stroke = 'red';
+                    } else {
+                        targ.strokeWidth = 0;
+                        targ.stroke = false;
+                    }
+                    if (!activeObject.intersectsWithObject(targ)) {
+                        activeObject.strokeWidth = 0;
+                        activeObject.stroke = false;
+                    }
+                }
+
+            });
+
+            //canvas.forEachObject(function (obj) {
+            //    if (obj === options.target) return;
+            //    console.log(obj);
+            //    if (obj.selectable === true) {
+
+            //        obj.set('opacity', options.target.intersectsWithObject(obj) ? 0.5 : 1);
+            //        obj.strokeWidth = 10;
+            //        obj.stroke = 'red';
+            //    }
+
+            //});
+        }
+
+        function drop(options) {
+            options.target.setCoords();
+
+            canvas.forEachObject(function (targ) {
+                let objetoAtual = options.target;
+
+                if (targ === objetoAtual) { return; }
+
+                if (targ.tipo !== 'fundo') {
+                    if (objetoAtual.prateleira && targ.tipo === 'shelf') {
+
+
+                        if (objetoAtual.prateleira === targ.nome) {
+
+                            //console.log('isContainedWithinObject--vv');
+                            //console.log(objetoAtual);
+                            //console.log(targ);
+
+                            //var boundingRect = targ.getBoundingRect(),
+                            //    point1 = new fabric.Point(boundingRect.left, boundingRect.top),
+                            //    point2 = new fabric.Point(boundingRect.left + boundingRect.width, boundingRect.top + boundingRect.height);
+
+                            //console.log(objetoAtual.isContainedWithinObject(targ));
+                            //console.log(objetoAtual.nome);
+                            //console.log(targ.nome)
+                            //console.log(targ.left)
+                            //console.log(targ.top)
+                            //console.log(targ.width)
+                            //console.log(targ.height)
+                            //console.log(boundingRect);
+                            //console.log(point1);
+                            //console.log(point2);
+                            //console.log('isContainedWithinObject--^^');
+                            //console.log('isContainedWithinRect--vv');
+                            //console.log(objetoAtual.isContainedWithinRect(point1, point2));
+
+                            //let boundingRect1 = objetoAtual.getBoundingRect();
+                            //console.log(boundingRect1.left >= point1.x);
+
+                            //console.log(boundingRect1.left);
+                            //console.log(boundingRect1.width);
+                            //console.log(point2.x);
+
+                            //console.log('-----');
+                            //console.log(boundingRect1.top);
+                            //console.log(point1.y);
+
+                            //console.log(boundingRect1.left + boundingRect1.width <= point2.x );
+                            //console.log(boundingRect1.top >= point1.y );
+                            //console.log(boundingRect1.top + boundingRect1.height <= point2.y);
+
+                            //console.log('isContainedWithinRect--^^');
+                            if (objetoAtual.isContainedWithinObject(targ)) {
+
+                                //if (objetoAtual.intersectsWithObject(targ) && targ.intersectsWithObject(objetoAtual)) {
+                                //    //objetoAtual.correto = false;
+                                //    objetoAtual.set('left', objetoAtual.originalState.left);
+                                //    objetoAtual.set('top', objetoAtual.originalState.top);
+                                //    objetoAtual.setCoords();
+                                //}
+                                //else {
+
+                                objetoAtual.correto = true;
+                                //targ.strokeWidth = 10;
+                                //targ.stroke = 'green';
+                                //}
+
+
+                            } else {
+                                objetoAtual.correto = false;
+                                objetoAtual.set('left', objetoAtual.originalState.left);
+                                objetoAtual.set('top', objetoAtual.originalState.top);
+                                objetoAtual.setCoords();
+                            }
+
+                        } else {
+
+                            //if (!objetoAtual.correto) {
+                            //console.log('errado--vv');
+                            //console.log(objetoAtual.prateleira);
+                            //console.log(targ.nome);
+                            //console.log('errado--^^');
+
+                            //targ.strokeWidth = 0;
+                            //targ.stroke = false;
+
+                            //objetoAtual.set('left', objetoAtual.originalState.left);
+                            //objetoAtual.set('top', objetoAtual.originalState.top);
+                            //objetoAtual.setCoords();
+                            //}
+
+
+                        }
+
+
+                    }
+                }
+
+
+
+
+
+
+
+            });
+
+        }
+    }
+
+    function validar() {
+        let validos = [];
+        canvas
+            .getObjects('image')
+            .some(obj => {
+                if (obj.correto) {
+                    validos.push(obj.nome);
+                }
+            });
+        alert(`Os produtos válidos nas prateleiras são: ${JSON.stringify(validos)}`);
+    }
+
+</script>
