@@ -11,6 +11,7 @@ Utilizado:
 * Plugin:
 FabricJS - http://fabricjs.com/
 
-* Acessos (sem mudar a porta configurada):
-https://localhost:44337/POC/Index
-https://localhost:44337/prateleira
+Acessos (sem mudar a porta configurada):
+
+* https://localhost:44337/POC/Index
+* https://localhost:44337/prateleira
